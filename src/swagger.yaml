@@ -1,0 +1,423 @@
+openapi: 3.0.3
+info:
+  title: Trivara Rental API
+  version: 1.0.0
+servers:
+  - url: http://localhost:4000
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    IdResponse:
+      type: object
+      properties:
+        id:
+          type: string
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+    Image:
+      type: object
+      properties:
+        url:
+          type: string
+    Property:
+      type: object
+      properties:
+        _id:
+          type: string
+        category:
+          type: string
+        subcategory:
+          type: string
+        name:
+          type: string
+        location:
+          type: string
+        originalPrice:
+          type: number
+        discountedPrice:
+          type: number
+        dimensions:
+          type: string
+        additionalInfo:
+          type: string
+          nullable: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/Image'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Query:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        message:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+  /api/auth/login:
+    post:
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Token issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+  /api/properties:
+    get:
+      summary: List properties
+      responses:
+        '200':
+          description: List returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Property'
+    post:
+      summary: Create property
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [category, subcategory, name, location, originalPrice, discountedPrice, dimensions]
+              properties:
+                category:
+                  type: string
+                subcategory:
+                  type: string
+                name:
+                  type: string
+                location:
+                  type: string
+                originalPrice:
+                  type: number
+                discountedPrice:
+                  type: number
+                dimensions:
+                  type: string
+                additionalInfo:
+                  type: string
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+        '400':
+          description: Missing fields
+        '401':
+          description: Unauthorized
+  /api/properties/{id}:
+    get:
+      summary: Get property
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '404':
+          description: Not found
+    put:
+      summary: Update property
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                category:
+                  type: string
+                subcategory:
+                  type: string
+                name:
+                  type: string
+                location:
+                  type: string
+                originalPrice:
+                  type: number
+                discountedPrice:
+                  type: number
+                dimensions:
+                  type: string
+                additionalInfo:
+                  type: string
+                removeImageIds:
+                  oneOf:
+                    - type: string
+                    - type: array
+                      items:
+                        type: string
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '200':
+          description: Updated
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+    delete:
+      summary: Delete property
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted
+        '401':
+          description: Unauthorized
+  /api/queries:
+    get:
+      summary: List queries
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Query'
+        '401':
+          description: Unauthorized
+    post:
+      summary: Submit query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, phone, message]
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                phone:
+                  type: string
+                message:
+                  type: string
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+  /api/queries/{id}:
+    get:
+      summary: Get query
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Query'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+  /api/uploads:
+    post:
+      summary: Upload single file (S3 or local)
+      description: Upload a single file and receive a public URL. Uses S3 if credentials are configured; otherwise stores locally.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                  key:
+                    type: string
+        '500':
+          description: Upload failed
+  /api/upload:
+    post:
+      summary: Upload single file (S3 or local)
+      description: Upload a single file and receive a public URL. Uses S3 if credentials are configured; otherwise stores locally.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                  key:
+                    type: string
+                    nullable: true
+        '400':
+          description: No file provided
+        '500':
+          description: Upload failed
+  /api/upload-multiple:
+    post:
+      summary: Upload multiple files (S3 or local)
+      description: Upload multiple files and receive public URLs. Uses S3 if credentials are configured; otherwise stores locally.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '200':
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  files:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        url:
+                          type: string
+                        key:
+                          type: string
+                          nullable: true
+                        originalName:
+                          type: string
+        '400':
+          description: No files provided
+        '500':
+          description: Upload failed
