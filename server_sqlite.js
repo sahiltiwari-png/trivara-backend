@@ -14,7 +14,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-const ORIGIN = process.env.ORIGIN || 'http://localhost:3000';
+const ORIGIN = process.env.ORIGIN || 'http://localhost:3000'||'https://trivaraa.netlify.app/';
 
 // Storage directory
 const uploadDir = path.join(__dirname, 'uploads');
