@@ -19,37 +19,72 @@ const __dirname = path.dirname(__filename)
 
 const app = express()
 const PORT = process.env.PORT || 4000
-const ORIGIN = process.env.ORIGIN || 'http://localhost:3000'
 
 await connectMongo()
 
-const allowAllCors = !ORIGIN || ORIGIN === '*' || process.env.CORS_ALLOW_ALL === 'true'
-if (allowAllCors) {
-  app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  }))
-  app.options('*', cors())
-} else {
-  const origins = ORIGIN.split(',').map((s) => s.trim()).filter(Boolean)
-  app.use(cors({ origin: origins }))
-}
+/* ----------------------------------------
+   CUSTOM CORS CONFIGURATION
+----------------------------------------- */
+
+const allowedOrigins = [
+  "http://13.204.198.246:5173",
+  "https://hrms.gounicrew.com",
+  "https://trivaraa.netlify.app"
+]
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (Postman, curl)
+    if (!origin) return callback(null, true)
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true)
+    } else {
+      return callback(new Error("Not allowed by CORS"))
+    }
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+}))
+
+app.options('*', cors())
+
+/* ----------------------------------------
+   EXPRESS CONFIG
+----------------------------------------- */
+
 app.use(express.json({ limit: '10mb' }))
 app.use('/uploads', express.static(uploadDir))
+
+/* ----------------------------------------
+   HEALTH CHECK
+----------------------------------------- */
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true })
 })
 
+/* ----------------------------------------
+   SWAGGER DOCS
+----------------------------------------- */
+
 const swaggerDoc = YAML.load(path.join(__dirname, 'src', 'swagger.yaml'))
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc))
+
+/* ----------------------------------------
+   ROUTES
+----------------------------------------- */
 
 app.use('/api/auth', authRoutes())
 app.use('/api/uploads', uploadRoutes())
 app.use('/api', legacyUploadRoutes())
 app.use('/api/properties', propertiesRoutes())
 app.use('/api/queries', queriesRoutes())
+
+/* ----------------------------------------
+   START SERVER
+----------------------------------------- */
 
 app.listen(PORT, () => {
   console.log(`API listening on http://localhost:${PORT}`)
